@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from life_expectancy.cleaning import main_function, clean_data
+from life_expectancy.cleaning import main_function, clean_data, Region
 
 from . import FIXTURES_DIR
 
@@ -36,7 +36,14 @@ def test_main_function(mock_save_data, mock_clean_data, mock_load_data, input_da
     mock_load_data.return_value = input_data
     mock_clean_data.return_value = expected_pt
 
-    main_function(country='PT')
+    main_function(Region.PT)
     mock_save_data.assert_called_once()
     args, kwargs = mock_save_data.call_args
     pd.testing.assert_frame_equal(args[0], expected_pt)
+
+def test_get_actual_countries():
+
+    not_countries = ['EU27_2020', 'EFTA', 'EA18', 'EA19', 'EEA30_2007', 'EEA31', 'EU27_2007', 'EU28', 'DE_TOT']
+    expected_countries = [region.name for region in Region if region.name not in not_countries]
+    actual_countries = Region.get_actual_countries()
+    assert expected_countries == actual_countries

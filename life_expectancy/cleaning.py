@@ -1,12 +1,19 @@
+# pylint: disable=invalid-name
+# pylint: disable=redefined-outer-name
+# pylint: disable=inconsistent-return-statements
+
 from pathlib import Path
 import argparse
+from enum import Enum
 import pandas as pd
 
-def load_data(path_to_open):
+from life_expectancy.region_enum import Region
+
+def load_data(path_to_open) -> pd.DataFrame:
     initial_data = pd.read_csv(path_to_open, sep='\t', header=0)
     return initial_data
 
-def clean_data(initial_data):
+def clean_data(initial_data) -> pd.DataFrame:
     initial_data[['unit', 'sex', 'age','region']] = initial_data['unit,sex,age,geo\\time'].str.split(',', expand=True)
     initial_data = initial_data.drop(['unit,sex,age,geo\\time'], axis=1)
 
@@ -29,22 +36,31 @@ def clean_data(initial_data):
 
     return data
 
-def save_data(df, path_to_save):
+def save_data(df, path_to_save) -> None:
     df.to_csv(path_to_save, index=False)
 
-def main_function(country = 'PT'):
-    path_to_open = Path("life_expectancy/data/eu_life_expectancy_raw.tsv").resolve()
-    path_to_save = Path("life_expectancy/data/pt_life_expectancy.csv").resolve()
+def main_function(Region: Enum):
+
+    directory = Path(__file__).resolve().parent
+    path_to_open = directory / "data" / "eu_life_expectancy_raw.tsv"
+    path_to_save = directory / "data" / "pt_life_expectancy.csv"
 
     initial_data = load_data(path_to_open)
     data = clean_data(initial_data)
-    data_pt = data[data['region'] == country]
-    save_data(data_pt, path_to_save)
 
-    return data_pt
+    try:
+        region_value = Region.PT.name
+        data_country = data[data['region'] == region_value]
+
+        save_data(data_country, path_to_save)
+
+        return data_country
+
+    except AttributeError as e:
+        print(f"You tried to use an invalid country code -> {e}")
 
 if __name__ == "__main__":  # pragma: no cover
     parser = argparse.ArgumentParser()
-    parser.add_argument("--country", default="PT", help="Country code to filter the data")
+    parser.add_argument("--country", type= Enum, default= Region.PT, help="Country code to filter the data")
     args = parser.parse_args()
     main_function(args.country)
